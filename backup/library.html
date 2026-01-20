@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Label Sheet Library</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f4f6;
+      color: #222;
+    }
+    header {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    header small {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 54px);
+    }
+    aside {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 8px 4px;
+      color: #9ca3af;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: background 0.12s, border-color 0.12s;
+      font-size: 13px;
+    }
+    .list-item:hover {
+      background: rgba(249, 250, 251, 0.04);
+      border-color: rgba(156, 163, 175, 0.5);
+    }
+    .list-item.selected {
+      background: rgba(37, 99, 235, 0.25);
+      border-color: #60a5fa;
+    }
+    .list-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #111827;
+      flex-shrink: 0;
+    }
+    .list-thumb svg {
+      width: 60px;
+      height: 60px;
+      transform: translate(-10px, -10px);
+    }
+    .list-title {
+      font-size: 13px;
+      line-height: 1.25;
+      color: #e5e7eb;
+      word-break: break-word;
+    }
+    section.library {
+      padding: 16px 20px 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .library-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .library-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .library-header small {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .library-body {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr);
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    #sheet-preview-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+    }
+    #sheet-preview svg {
+      max-width: 100%;
+      max-height: 100%;
+      height: auto;
+      display: block;
+      background: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #cbd5f5;
+      background: #2563eb;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+    }
+    button.secondary {
+      background: white;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .status-text {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .empty-state {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      padding: 20px 8px;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      aside {
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 140px;
+      }
+      .library-body {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Label Sheet Library</h1>
+      <small>Select a base label on the left to view its 24‑label A4 sheet.</small>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div>
+        <div class="section-title">Base labels</div>
+        <div id="label-list" class="list"></div>
+      </div>
+    </aside>
+
+    <section class="library">
+      <div class="library-header">
+        <h2 id="library-title">No label selected</h2>
+        <small id="library-subtitle">Choose a label on the left to load its A4 24‑label sheet.</small>
+      </div>
+
+      <div class="library-body">
+        <div class="card">
+          <h3>A4 sheet preview</h3>
+          <div id="sheet-preview-wrapper">
+            <div class="empty-state" id="preview-empty">No sheet selected yet.</div>
+            <div id="sheet-preview" style="display:none;"></div>
+          </div>
+          <div class="controls">
+            <button id="download-btn" disabled>Download A4 SVG</button>
+            <button id="print-btn" class="secondary" disabled>Print A4 sheet</button>
+            <span class="status-text" id="status-text"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // CONFIG: use the same API key and folder IDs as the builder.
+    const API_KEY = "AIzaSyDQ9_K5QeGbDg5lViC4cjkKEdfuA79AVO4"; // browser key with Drive API enabled
+    const LABELS_FOLDER_ID = "169MZEkGQBB3yYQSzI93-6Fy-EFICaKYH"; // Base Labels
+    const SHEETS_FOLDER_ID = "1x0OgilwMlkVb_w9KGzBod1PoAI_k824X"; // Sheets (A4 24‑label)
+
+    const labelListEl = document.getElementById("label-list");
+    const libraryTitleEl = document.getElementById("library-title");
+    const librarySubtitleEl = document.getElementById("library-subtitle");
+    const sheetPreviewEl = document.getElementById("sheet-preview");
+    const previewEmptyEl = document.getElementById("preview-empty");
+    const downloadBtn = document.getElementById("download-btn");
+    const printBtn = document.getElementById("print-btn");
+    const statusTextEl = document.getElementById("status-text");
+
+    let currentSheet = null; // { id, name, svgText }
+
+    const labelSvgCache = new Map(); // base label previews
+    const sheetSvgCache = new Map(); // sheet SVGs
+
+    // Map baseName -> sheet file object { id, name }
+    const sheetIndex = new Map();
+
+    function baseNameFromLabelFile(file) {
+      const name = file.name || "";
+      return name.replace(/\.svg$/i, "");
+    }
+
+    function displayNameFromSheetFile(file) {
+      const name = file.name || "";
+      return name.replace(/-A4-4x6\.svg$/i, "").replace(/\.svg$/i, "");
+    }
+
+    async function loadLabelsAndSheets() {
+      await Promise.all([loadLabelFiles(), loadSheetIndex()]);
+    }
+
+    async function loadLabelFiles() {
+      try {
+        const url = `https://www.googleapis.com/drive/v3/files?q='${LABELS_FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Label list failed: ${res.status}`);
+        const data = await res.json();
+        const svgFiles = (data.files || [])
+          .filter(f => f.mimeType === "image/svg+xml")
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+        if (!svgFiles.length) {
+          labelListEl.innerHTML = '<div class="empty-state">No base labels found in this folder.</div>';
+          return;
+        }
+
+        svgFiles.forEach(file => addLabelListItem(file));
+      } catch (err) {
+        console.error(err);
+        labelListEl.innerHTML = '<div class="empty-state">Error loading labels from Google Drive.</div>';
+      }
+    }
+
+    async function loadSheetIndex() {
+      try {
+        const url = `https://www.googleapis.com/drive/v3/files?q='${SHEETS_FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Sheet list failed: ${res.status}`);
+        const data = await res.json();
+        const svgFiles = (data.files || [])
+          .filter(f => f.mimeType === "image/svg+xml");
+
+        sheetIndex.clear();
+        svgFiles.forEach(file => {
+          const baseName = displayNameFromSheetFile(file); // e.g. Peachx24.svg -> Peach
+          if (!sheetIndex.has(baseName)) {
+            sheetIndex.set(baseName, file);
+          }
+        });
+      } catch (err) {
+        console.error("Error building sheet index", err);
+      }
+    }
+
+    function addLabelListItem(file) {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      item.dataset.id = file.id;
+
+      const thumb = document.createElement("div");
+      thumb.className = "list-thumb";
+      item.appendChild(thumb);
+
+      const title = document.createElement("div");
+      title.className = "list-title";
+      title.textContent = baseNameFromLabelFile(file);
+      item.appendChild(title);
+
+      item.addEventListener("click", () => onLabelSelected(file, item));
+      labelListEl.appendChild(item);
+
+      fetchLabelSvg(file.id)
+        .then(svgText => {
+          thumb.innerHTML = svgText;
+        })
+        .catch(() => {
+          thumb.innerHTML = "";
+        });
+    }
+
+    function clearSelectedListItems(container) {
+      container.querySelectorAll(".list-item.selected").forEach(el => {
+        el.classList.remove("selected");
+      });
+    }
+
+    async function fetchLabelSvg(fileId) {
+      if (labelSvgCache.has(fileId)) return labelSvgCache.get(fileId);
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Label SVG fetch failed: ${res.status}`);
+      const text = await res.text();
+      labelSvgCache.set(fileId, text);
+      return text;
+    }
+
+    async function fetchSheetSvg(fileId) {
+      if (sheetSvgCache.has(fileId)) return sheetSvgCache.get(fileId);
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Sheet SVG fetch failed: ${res.status}`);
+      const text = await res.text();
+      sheetSvgCache.set(fileId, text);
+      return text;
+    }
+
+    async function onLabelSelected(labelFile, itemEl) {
+      clearSelectedListItems(labelListEl);
+      itemEl.classList.add("selected");
+      statusTextEl.textContent = "";
+
+      const baseName = baseNameFromLabelFile(labelFile);
+      libraryTitleEl.textContent = baseName;
+      librarySubtitleEl.textContent = "Loading A4 sheet for this label...";
+
+      const sheetFile = sheetIndex.get(baseName);
+      if (!sheetFile) {
+        showPreviewError("No A4 sheet found for this label.");
+        return;
+      }
+
+      try {
+        const svgText = await fetchSheetSvg(sheetFile.id);
+        setCurrentSheet({ id: sheetFile.id, name: sheetFile.name, svgText, baseName });
+      } catch (err) {
+        console.error(err);
+        showPreviewError("Could not load sheet SVG content.");
+      }
+    }
+
+    function setCurrentSheet(sheet) {
+      currentSheet = sheet;
+      previewEmptyEl.style.display = "none";
+      sheetPreviewEl.style.display = "block";
+      sheetPreviewEl.innerHTML = sheet.svgText;
+
+      librarySubtitleEl.textContent = `Loaded A4 24‑label sheet for: ${sheet.baseName || sheet.name}`;
+
+      downloadBtn.disabled = false;
+      printBtn.disabled = false;
+    }
+
+    function showPreviewError(msg) {
+      sheetPreviewEl.style.display = "none";
+      previewEmptyEl.style.display = "block";
+      previewEmptyEl.textContent = msg;
+      downloadBtn.disabled = true;
+      printBtn.disabled = true;
+    }
+
+    // Download current SVG
+    downloadBtn.addEventListener("click", () => {
+      if (!currentSheet) return;
+      const blob = new Blob([currentSheet.svgText], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentSheet.name || "label-sheet-A4.svg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Print current sheet
+    printBtn.addEventListener("click", () => {
+      if (!currentSheet) return;
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return;
+
+      const doc = printWindow.document;
+      doc.open();
+      doc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>${currentSheet.name || "Label sheet"}</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; align-items: center; justify-content: center; }
+    svg { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  ${currentSheet.svgText}
+  <script>window.onload = function() { window.focus(); window.print(); }<\/script>
+</body>
+</html>`);
+      doc.close();
+    });
+
+    // Init
+    loadLabelsAndSheets();
+  </script>
+</body>
+</html>

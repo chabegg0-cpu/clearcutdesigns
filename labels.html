@@ -526,60 +526,55 @@
     // === A4 sheet generation from uploaded image ===
 
     function generateSheetFromImage(imageDataUrl, fileName) {
-      // Calculate positions based on actual measurements from the reference image
-      // Column centers: 586, 690, 793, 897 (spacing ~104px)
-      // Row centers: 142, 288, 433, 579, 725, 871 (spacing ~146px)
-      // Label diameter: ~96px (radius ~48px)
-      
-      const cols = 4;
-      const rows = 6;
-      const labelDiameter = 96;
-      const labelRadius = labelDiameter / 2;
-      
-      // Column positions (left edges)
-      const xPx = [538, 642, 745, 849];
-      // Row positions (top edges)
-      const yPx = [94, 240, 385, 531, 677, 823];
-      
-      // SVG canvas dimensions (796×1124 matches original template)
+      // Original pixel coordinates and sizes (from source SVG template)
+      const xPx = [579.06993, 401.57263, 223.37416, 45.476175];
+      const yPx = [34.992503, 212.55212, 389.86244, 568.07383, 746.28521, 922.59435];
+      const labelWidthPx = 170.57071;
+      const labelHeightPx = 170.30001;
+
+      // SVG canvas dimensions (A4 proportions at 796×1124, matching original template)
       const svgWidth = 796;
       const svgHeight = 1124;
 
-      // Generate SVG with proper coordinates
+      const cols = xPx.length;
+      const rows = yPx.length;
+
+      // Generate SVG at full A4 size
       let svg = '';
       svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
       svg += '<rect width="100%" height="100%" fill="white" />';
 
-      // Generate each label
+      // Generate each label using the same approach as the source SVG
       let index = 1;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const x = xPx[col];
           const y = yPx[row];
 
-          // Create clipPath for this label (circle at the label position)
+          // Create clipPath for this label (rectangle at the label position)
           const clipId = `clip-${index}`;
-          const cx = x + labelRadius;
-          const cy = y + labelRadius;
           
           svg += `<defs>`;
           svg += `<clipPath id="${clipId}">`;
-          svg += `<circle cx="${cx}" cy="${cy}" r="${labelRadius}" />`;
+          svg += `<rect x="${x}" y="${y}" width="${labelWidthPx}" height="${labelHeightPx}" />`;
           svg += `</clipPath>`;
           svg += `</defs>`;
 
-          // White background circle
-          svg += `<circle cx="${cx}" cy="${cy}" r="${labelRadius}" fill="white" />`;
+          // White background circle (circular crop)
+          const cx = x + labelWidthPx / 2;
+          const cy = y + labelHeightPx / 2;
+          const r = labelWidthPx / 2;
+          svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" />`;
 
-          // Image element - positioned to fill the circular area
+          // Image using transform matrix (exactly like source SVG)
+          // matrix(scaleX, 0, 0, scaleY, translateX, translateY)
+          // This scales a 1×1 image to fill the label area
           svg += `<image `;
           svg += `href="${imageDataUrl}" `;
-          svg += `x="${x}" `;
-          svg += `y="${y}" `;
-          svg += `width="${labelDiameter}" `;
-          svg += `height="${labelDiameter}" `;
+          svg += `width="1" height="1" `;
+          svg += `preserveAspectRatio="none" `;
+          svg += `transform="matrix(${labelWidthPx},0,0,${labelHeightPx},${x},${y})" `;
           svg += `clip-path="url(#${clipId})" `;
-          svg += `preserveAspectRatio="xMidYMid slice" `;
           svg += `/>`;
 
           index++;

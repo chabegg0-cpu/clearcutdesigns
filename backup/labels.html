@@ -213,7 +213,8 @@
       color: #374151;
     }
     #sheet-preview-wrapper {
-      flex: 1;
+      width: 707px;
+      height: 1000px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -222,11 +223,9 @@
       border-radius: 8px;
       border: 1px solid #e5e7eb;
       padding: 8px;
+      box-sizing: border-box;
     }
     #sheet-preview svg {
-      max-width: 100%;
-      max-height: 100%;
-      height: auto;
       display: block;
       background: white;
       border-radius: 4px;
@@ -527,96 +526,71 @@
     // === A4 sheet generation from uploaded image ===
 
     function generateSheetFromImage(imageDataUrl, fileName) {
-      // A4 dimensions in mm
-      const pageWidthMm = 210;
-      const pageHeightMm = 297;
-      
-      // Label layout configuration
-      const cols = 4;
-      const rows = 6;
-      const labelDiameterMm = 45; // diameter of each circular label
-      const marginMm = 15; // page margin
-      const gapMm = 8; // gap between labels
-      
-      // Calculate label positions
-      const labelRadiusMm = labelDiameterMm / 2;
-      
-      // Calculate available width for labels (excluding margins)
-      const availableWidth = pageWidthMm - (2 * marginMm);
-      const availableHeight = pageHeightMm - (2 * marginMm);
-      
-      // Calculate total label width including gaps
-      const totalLabelWidth = (cols * labelDiameterMm) + ((cols - 1) * gapMm);
-      const totalLabelHeight = (rows * labelDiameterMm) + ((rows - 1) * gapMm);
-      
-      // Calculate starting positions (centering labels on page)
-      const startX = (pageWidthMm - totalLabelWidth) / 2;
-      const startY = (pageHeightMm - totalLabelHeight) / 2;
-      
-      // Generate coordinates for each label
-      const coords = [];
+      // Original pixel coordinates and sizes (from source SVG)
+      const xPx = [579.06993, 401.57263, 223.37416, 45.476175];
+      const yPx = [34.992503, 212.55212, 389.86244, 568.07383, 746.28521, 922.59435];
+      const labelWidthPx = 170.57071;
+      const labelHeightPx = 170.30001;
+
+      // SVG canvas dimensions (original, from source file)
+      const svgWidth = 796;
+      const svgHeight = 1124;
+
+      const cols = xPx.length;
+      const rows = yPx.length;
+
+      // Generate SVG using original coordinates and transform matrix (same as source SVG)
+      let svg = '';
+      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
+      svg += '<rect width="100%" height="100%" fill="white" />';
+
+      // Generate each label using the exact same approach as the source SVG
       let index = 1;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          const x = startX + col * (labelDiameterMm + gapMm);
-          const y = startY + row * (labelDiameterMm + gapMm);
-          
-          coords.push({
-            index,
-            row: row + 1,
-            col: col + 1,
-            x,
-            y,
-            width: labelDiameterMm,
-            height: labelDiameterMm,
-          });
+          const x = xPx[col];
+          const y = yPx[row];
+
+          // Create clipPath for this label (rectangle at the label position)
+          const clipId = `clip-${index}`;
+          svg += `<defs>`;
+          svg += `<clipPath id="${clipId}">`;
+          svg += `<rect x="${x}" y="${y}" width="${labelWidthPx}" height="${labelHeightPx}" />`;
+          svg += `</clipPath>`;
+          svg += `</defs>`;
+
+          // White background circle (circular crop)
+          const cx = x + labelWidthPx / 2;
+          const cy = y + labelHeightPx / 2;
+          const r = labelWidthPx / 2;
+          svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" />`;
+
+          // Image using transform matrix (exactly like source SVG)
+          // matrix(scaleX, 0, 0, scaleY, translateX, translateY)
+          svg += `<image `;
+          svg += `href="${imageDataUrl}" `;
+          svg += `width="1" height="1" `;
+          svg += `preserveAspectRatio="none" `;
+          svg += `transform="matrix(${labelWidthPx},0,0,${labelHeightPx},${x},${y})" `;
+          svg += `clip-path="url(#${clipId})" `;
+          svg += `/>`;
+
           index++;
         }
       }
-      
-      // Generate SVG
-      let svg = '';
-      svg += '<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">';
-      svg += '<style>.label-image { clip-path: circle(50% at 50%); }</style>';
-      svg += '<rect width="100%" height="100%" fill="white" />';
-      
-      // Generate each label as a circular clip with the image
-      coords.forEach((c, i) => {
-        const clipId = `clip-${i}`;
-        
-        svg += `<defs>`;
-        svg += `<clipPath id="${clipId}">`;
-        svg += `<circle cx="${c.x + c.width / 2}" cy="${c.y + c.height / 2}" r="${c.width / 2}" />`;
-        svg += `</clipPath>`;
-        svg += `</defs>`;
-        
-        // White background circle
-        svg += `<circle cx="${c.x + c.width / 2}" cy="${c.y + c.height / 2}" r="${c.width / 2}" fill="white" />`;
-        
-        // Image clipped to circle
-        svg += `<image `;
-        svg += `href="${imageDataUrl}" `;
-        svg += `x="${c.x}" `;
-        svg += `y="${c.y}" `;
-        svg += `width="${c.width}" `;
-        svg += `height="${c.height}" `;
-        svg += `clip-path="url(#${clipId})" `;
-        svg += `preserveAspectRatio="xMidYMid slice" `;
-        svg += `/>`;
-      });
-      
+
       svg += '</svg>';
-      
+
       const defaultName = fileName.replace(/\.[^/.]+$/, "");
       const name = `${defaultName}x24.svg`;
-      
+
       currentSheet = {
         name,
         labelName: defaultName,
         svg,
-        coords,
+        coords: [], // Not needed for display
       };
-      
+
       setCurrentSheet(currentSheet);
       updateSaveButtonEnabled();
     }

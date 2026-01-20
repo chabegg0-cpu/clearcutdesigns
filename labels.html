@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Label Sheet Builder (Private)</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f4f6;
+      color: #222;
+    }
+    header {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    header small {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+    .auth-info {
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .auth-info button {
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 54px);
+    }
+    aside {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 8px 4px;
+      color: #9ca3af;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .list-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: background 0.12s, border-color 0.12s;
+      font-size: 13px;
+    }
+    .list-item:hover {
+      background: rgba(249, 250, 251, 0.04);
+      border-color: rgba(156, 163, 175, 0.5);
+    }
+    .list-item.selected {
+      background: rgba(37, 99, 235, 0.25);
+      border-color: #60a5fa;
+    }
+    .list-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #111827;
+      flex-shrink: 0;
+    }
+    .list-thumb svg {
+      width: 60px;
+      height: 60px;
+      transform: translate(-10px, -10px);
+    }
+    .list-title {
+      font-size: 13px;
+      line-height: 1.25;
+      color: #e5e7eb;
+      word-break: break-word;
+    }
+    section.builder {
+      padding: 16px 20px 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .builder-header {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .builder-header h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .builder-header small {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .builder-body {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    #sheet-preview-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+    }
+    #sheet-preview svg {
+      max-width: 100%;
+      max-height: 100%;
+      height: auto;
+      display: block;
+      background: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    .controls .name-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .controls label {
+      font-size: 13px;
+      color: #374151;
+    }
+    .controls input[type="text"] {
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      padding: 5px 8px;
+      font-size: 13px;
+      min-width: 140px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid #cbd5f5;
+      background: #2563eb;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+    }
+    button.secondary {
+      background: white;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    .status-text {
+      font-size: 12px;
+      color: #6b7280;
+    }
+    #coords-table-wrapper {
+      flex: 1;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 4px 6px;
+      text-align: right;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+    thead {
+      background: #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .empty-state {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      padding: 20px 8px;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      aside {
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        height: 140px;
+      }
+      .builder-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+      }
+    }
+  </style>
+  <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Label Sheet Builder</h1>
+      <small>Private builder: generates A4-ready SVG sheets and saves them into a Drive folder used by the public library.</small>
+    </div>
+    <div class="auth-info">
+      <div id="auth-status">Not signed in</div>
+      <div>
+        <button id="sign-in-btn" class="secondary">Sign in with Google</button>
+        <button id="sign-out-btn" class="secondary" style="display:none;">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div>
+        <div class="section-title">Base label SVGs (design assets)</div>
+        <div id="label-list" class="list"></div>
+      </div>
+    </aside>
+
+    <section class="builder">
+      <div class="builder-header">
+        <h2 id="builder-title">No label selected</h2>
+        <small id="builder-subtitle">Choose a base label on the left, give it a name (e.g. "Peach"), then generate a 4×6 A4 sheet.</small>
+      </div>
+
+      <div class="builder-body">
+        <div class="card">
+          <h3>A4 sheet preview</h3>
+          <div id="sheet-preview-wrapper">
+            <div class="empty-state" id="preview-empty">No label selected yet.</div>
+            <div id="sheet-preview" style="display:none;"></div>
+          </div>
+          <div class="controls">
+            <div class="name-group">
+              <label for="design-name-input">Sheet name:</label>
+              <input id="design-name-input" type="text" placeholder="e.g. Peach" />
+            </div>
+            <button id="download-btn" disabled>Download A4 SVG</button>
+            <button id="save-drive-btn" class="secondary" disabled>Save base + sheet to Drive</button>
+            <span class="status-text" id="save-status"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Label coordinates on A4 (mm)</h3>
+          <div id="coords-table-wrapper">
+            <div class="empty-state" id="coords-empty">Coordinates will appear here once a sheet is generated.</div>
+            <div id="coords-table-container" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // === CONFIG ===
+    const CLIENT_ID = "515692635432-a7ul2sghm4356u9a26q34a4m6he12cg2.apps.googleusercontent.com";
+    const API_KEY = "AIzaSyDQ9_K5QeGbDg5lViC4cjkKEdfuA79AVO4";
+    const LABELS_FOLDER_ID = "169MZEkGQBB3yYQSzI93-6Fy-EFICaKYH"; // Base Labels
+    const SHEETS_FOLDER_ID = "1x0OgilwMlkVb_w9KGzBod1PoAI_k824X"; // Sheets
+    const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
+    // === DOM references ===
+    const labelListEl = document.getElementById("label-list");
+    const builderTitleEl = document.getElementById("builder-title");
+    const builderSubtitleEl = document.getElementById("builder-subtitle");
+
+    const sheetPreviewEl = document.getElementById("sheet-preview");
+    const previewEmptyEl = document.getElementById("preview-empty");
+
+    const coordsEmptyEl = document.getElementById("coords-empty");
+    const coordsTableContainer = document.getElementById("coords-table-container");
+
+    const designNameInput = document.getElementById("design-name-input");
+    const downloadBtn = document.getElementById("download-btn");
+    const saveDriveBtn = document.getElementById("save-drive-btn");
+    const saveStatusEl = document.getElementById("save-status");
+
+    const authStatusEl = document.getElementById("auth-status");
+    const signInBtn = document.getElementById("sign-in-btn");
+    const signOutBtn = document.getElementById("sign-out-btn");
+
+    // === In-memory state ===
+    const labelSvgCache = new Map(); // fileId -> raw SVG text
+    let currentSheet = null; // { svg, coords, name, labelName }
+    let currentBaseSvgText = null; // raw SVG of the selected base label
+
+    let gapiInited = false;
+
+    function updateAuthUi(isSignedIn, userEmail) {
+      if (isSignedIn) {
+        authStatusEl.textContent = userEmail ? `Signed in as ${userEmail}` : "Signed in";
+        signInBtn.style.display = "none";
+        signOutBtn.style.display = "inline-flex";
+      } else {
+        authStatusEl.textContent = "Not signed in";
+        signInBtn.style.display = "inline-flex";
+        signOutBtn.style.display = "none";
+      }
+    }
+
+    async function initGapiClient() {
+      return new Promise((resolve, reject) => {
+        gapi.load("client:auth2", async () => {
+          try {
+            await gapi.client.init({
+              apiKey: API_KEY,
+              clientId: CLIENT_ID,
+              discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+              scope: SCOPES,
+            });
+
+            gapiInited = true;
+
+            const authInstance = gapi.auth2.getAuthInstance();
+            const updateFromInstance = () => {
+              const isSignedIn = authInstance.isSignedIn.get();
+              const user = authInstance.currentUser.get();
+              const profile = user && user.getBasicProfile ? user.getBasicProfile() : null;
+              const email = profile ? profile.getEmail() : null;
+              updateAuthUi(isSignedIn, email);
+            };
+
+            authInstance.isSignedIn.listen(updateFromInstance);
+            updateFromInstance();
+
+            resolve();
+          } catch (err) {
+            console.error("Error initializing gapi client", err);
+            reject(err);
+          }
+        });
+      });
+    }
+
+    signInBtn.addEventListener("click", async () => {
+      try {
+        if (!gapiInited) {
+          await initGapiClient();
+        }
+        const authInstance = gapi.auth2.getAuthInstance();
+        await authInstance.signIn();
+      } catch (err) {
+        console.error("Sign-in failed", err);
+      }
+    });
+
+    signOutBtn.addEventListener("click", async () => {
+      try {
+        const authInstance = gapi.auth2.getAuthInstance();
+        await authInstance.signOut();
+      } catch (err) {
+        console.error("Sign-out failed", err);
+      }
+    });
+
+    // === Helpers for name + button state ===
+
+    function hasValidDesignName() {
+      return designNameInput.value.trim().length > 0;
+    }
+
+    function updateSaveButtonEnabled() {
+      saveDriveBtn.disabled = !currentSheet || !hasValidDesignName();
+    }
+
+    designNameInput.addEventListener("input", () => {
+      saveStatusEl.textContent = "";
+      const baseName = designNameInput.value.trim();
+      if (currentSheet && baseName) {
+        currentSheet.name = `${baseName}x24.svg`;
+      }
+      updateSaveButtonEnabled();
+    });
+
+    // === Drive listing for base label SVGs (read-only, via API key) ===
+
+    async function loadLabelFiles() {
+      try {
+        const url = `https://www.googleapis.com/drive/v3/files?q='${LABELS_FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Drive list failed: ${res.status}`);
+        }
+        const data = await res.json();
+        const svgFiles = (data.files || [])
+          .filter(f => f.mimeType === "image/svg+xml")
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+        if (!svgFiles.length) {
+          labelListEl.innerHTML = '<div class="empty-state">No SVG labels found in this folder.</div>';
+          return;
+        }
+
+        svgFiles.forEach(file => addLabelListItem(file));
+      } catch (err) {
+        console.error(err);
+        labelListEl.innerHTML = '<div class="empty-state">Error loading labels from Google Drive.</div>';
+      }
+    }
+
+    function addLabelListItem(file) {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      item.dataset.id = file.id;
+
+      const thumb = document.createElement("div");
+      thumb.className = "list-thumb";
+      item.appendChild(thumb);
+
+      const title = document.createElement("div");
+      title.className = "list-title";
+      title.textContent = file.name;
+      item.appendChild(title);
+
+      item.addEventListener("click", () => onLabelSelected(file, item));
+      labelListEl.appendChild(item);
+
+      fetchLabelSvg(file.id)
+        .then(svgText => {
+          thumb.innerHTML = svgText;
+        })
+        .catch(() => {
+          thumb.innerHTML = "";
+        });
+    }
+
+    function clearSelectedListItems(container) {
+      container.querySelectorAll(".list-item.selected").forEach(el => {
+        el.classList.remove("selected");
+      });
+    }
+
+    async function onLabelSelected(file, itemEl) {
+      clearSelectedListItems(labelListEl);
+      itemEl.classList.add("selected");
+
+      builderTitleEl.textContent = file.name;
+      builderSubtitleEl.textContent = "Building 4×6 A4 sheet for this label. Enter a name before saving.";
+
+      saveStatusEl.textContent = "";
+
+      try {
+        const svgText = await fetchLabelSvg(file.id);
+        currentBaseSvgText = svgText;
+
+        const defaultName = file.name.replace(/\.svg$/i, "");
+        designNameInput.value = defaultName;
+
+        const sheet = buildA4SheetFromLabel(svgText, defaultName);
+        setCurrentSheet(sheet);
+        updateSaveButtonEnabled();
+      } catch (err) {
+        console.error(err);
+        showPreviewError("Could not load label SVG content.");
+      }
+    }
+
+    async function fetchLabelSvg(fileId) {
+      if (labelSvgCache.has(fileId)) {
+        return labelSvgCache.get(fileId);
+      }
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Drive fetch failed: ${res.status}`);
+      }
+      const text = await res.text();
+      labelSvgCache.set(fileId, text);
+      return text;
+    }
+
+    // === A4 sheet generation using your original 4×6 coords ===
+
+    function buildA4SheetFromLabel(labelSvgText, baseName) {
+      const pageWidthMm = 210;
+      const pageHeightMm = 297;
+
+      const pxWidth = 796;
+      const pxHeight = 1124;
+
+      const scaleX = pageWidthMm / pxWidth;
+      const scaleY = pageHeightMm / pxHeight;
+
+      const xPx = [
+        579.06993,
+        401.57263,
+        223.37416,
+        45.476175,
+      ];
+
+      const yPx = [
+        34.992503,
+        212.55212,
+        389.86244,
+        568.07383,
+        746.28521,
+        922.59435,
+      ];
+
+      const labelWidthPx = 170.57071;
+      const labelHeightPx = 170.30001;
+
+      const cols = xPx.length;
+      const rows = yPx.length;
+
+      const parser = new DOMParser();
+      const srcDoc = parser.parseFromString(labelSvgText, "image/svg+xml");
+      const srcSvg = srcDoc.documentElement;
+
+      let srcViewBox = srcSvg.getAttribute("viewBox");
+      if (!srcViewBox) {
+        const w = parseFloat(srcSvg.getAttribute("width") || "100") || 100;
+        const h = parseFloat(srcSvg.getAttribute("height") || "100") || 100;
+        srcViewBox = `0 0 ${w} ${h}`;
+      }
+
+      const innerSvgContent = srcSvg.innerHTML || "";
+
+      const coords = [];
+      let index = 1;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const xPxVal = xPx[col];
+          const yPxVal = yPx[row];
+
+          const x = xPxVal * scaleX;
+          const y = yPxVal * scaleY;
+          const width = labelWidthPx * scaleX;
+          const height = labelHeightPx * scaleY;
+
+          coords.push({
+            index,
+            row: row + 1,
+            col: col + 1,
+            x,
+            y,
+            width,
+            height,
+          });
+          index++;
+        }
+      }
+
+      let svg = "";
+      svg += '<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">';
+      svg += "<defs>";
+      svg += `<symbol id="label-source" viewBox="${srcViewBox}">`;
+      svg += innerSvgContent;
+      svg += "</symbol>";
+      svg += "</defs>";
+
+      coords.forEach(c => {
+        svg += `<use href="#label-source" x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" />`;
+      });
+
+      const name = `${baseName}x24.svg`;
+
+      svg += "</svg>";
+
+      return {
+        name,
+        labelName: baseName,
+        svg,
+        coords,
+      };
+    }
+
+    function setCurrentSheet(sheet) {
+      currentSheet = sheet;
+
+      previewEmptyEl.style.display = "none";
+      sheetPreviewEl.style.display = "block";
+      sheetPreviewEl.innerHTML = sheet.svg;
+
+      renderCoordsTable(sheet.coords);
+
+      downloadBtn.disabled = false;
+      updateSaveButtonEnabled();
+    }
+
+    function showPreviewError(msg) {
+      sheetPreviewEl.style.display = "none";
+      previewEmptyEl.style.display = "block";
+      previewEmptyEl.textContent = msg;
+      downloadBtn.disabled = true;
+      saveDriveBtn.disabled = true;
+    }
+
+    function renderCoordsTable(coords) {
+      if (!coords || !coords.length) {
+        coordsEmptyEl.style.display = "block";
+        coordsTableContainer.style.display = "none";
+        return;
+      }
+
+      coordsEmptyEl.style.display = "none";
+      coordsTableContainer.style.display = "block";
+
+      const rowsHtml = coords
+        .map(c => {
+          return `<tr>
+            <td>${c.index}</td>
+            <td>${c.row}</td>
+            <td>${c.col}</td>
+            <td>${c.x.toFixed(2)}</td>
+            <td>${c.y.toFixed(2)}</td>
+            <td>${c.width.toFixed(2)}</td>
+            <td>${c.height.toFixed(2)}</td>
+          </tr>`;
+        })
+        .join("");
+
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Row</th>
+              <th>Col</th>
+              <th>X</th>
+              <th>Y</th>
+              <th>Width</th>
+              <th>Height</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+
+      coordsTableContainer.innerHTML = tableHtml;
+    }
+
+    // === Download current sheet as SVG (local) ===
+
+    downloadBtn.addEventListener("click", () => {
+      if (!currentSheet) return;
+      const blob = new Blob([currentSheet.svg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = currentSheet.name || "label-sheet-A4.svg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // === Save current sheet + base SVG into Google Drive ===
+
+    async function ensureSignedIn() {
+      if (!gapiInited) {
+        await initGapiClient();
+      }
+      const authInstance = gapi.auth2.getAuthInstance();
+      if (!authInstance.isSignedIn.get()) {
+        await authInstance.signIn();
+      }
+      return authInstance.currentUser.get();
+    }
+
+    function uploadSvgToDrive(name, svgText, folderId) {
+      const boundary = "-------314159265358979323846";
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const closeDelim = "\r\n--" + boundary + "--";
+
+      const metadata = {
+        name,
+        mimeType: "image/svg+xml",
+        parents: [folderId],
+      };
+
+      const multipartRequestBody =
+        delimiter +
+        "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+        JSON.stringify(metadata) +
+        "\r\n" +
+        delimiter +
+        "Content-Type: image/svg+xml\r\n\r\n" +
+        svgText +
+        closeDelim;
+
+      return gapi.client.request({
+        path: "/upload/drive/v3/files",
+        method: "POST",
+        params: { uploadType: "multipart" },
+        headers: {
+          "Content-Type": "multipart/related; boundary=" + boundary,
+        },
+        body: multipartRequestBody,
+      });
+    }
+
+    saveDriveBtn.addEventListener("click", async () => {
+      if (!currentSheet || !currentBaseSvgText || !hasValidDesignName()) return;
+
+      const baseName = designNameInput.value.trim();
+      const baseFileName = `${baseName}.svg`;
+      const sheetFileName = `${baseName}x24.svg`;
+
+      saveStatusEl.textContent = "Saving base + sheet to Drive...";
+
+      try {
+        await ensureSignedIn();
+
+        // Upload/duplicate the base label SVG into the Base Labels folder under the chosen name
+        const baseResp = await uploadSvgToDrive(baseFileName, currentBaseSvgText, LABELS_FOLDER_ID);
+
+        // Upload the generated A4 sheet into the Sheets folder under the chosen name
+        const sheetResp = await uploadSvgToDrive(sheetFileName, currentSheet.svg, SHEETS_FOLDER_ID);
+
+        const baseId = baseResp && baseResp.result && baseResp.result.id;
+        const sheetId = sheetResp && sheetResp.result && sheetResp.result.id;
+
+        if (baseId && sheetId) {
+          saveStatusEl.textContent = `Saved as "${baseName}" (base + A4 sheet).`;
+        } else {
+          saveStatusEl.textContent = "Saved, but response missing one or more IDs.";
+        }
+      } catch (err) {
+        console.error("Upload failed", err);
+        saveStatusEl.textContent = "Error saving to Drive (see console).";
+      }
+    });
+
+    // === Init ===
+
+    loadLabelFiles();
+  </script>
+</body>
+</html>

@@ -124,12 +124,80 @@
     }
     .builder-body {
       display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-      gap: 16px;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
       flex: 1;
       min-height: 0;
     }
-    .card {
+    .tool-panel {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .tool-panel h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #374151;
+    }
+    .round-label-canvas {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .round-label-canvas img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .round-label-canvas .placeholder {
+      color: #9ca3af;
+      font-size: 13px;
+      text-align: center;
+      padding: 20px;
+    }
+    .upload-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .upload-btn {
+      appearance: none;
+      border: 1px solid #cbd5f5;
+      background: #2563eb;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .upload-btn:hover {
+      background: #1d4ed8;
+      border-color: #2563eb;
+    }
+    #image-upload {
+      display: none;
+    }
+    .preview-panel {
       background: #ffffff;
       border-radius: 10px;
       padding: 12px;
@@ -139,9 +207,10 @@
       min-width: 0;
       min-height: 0;
     }
-    .card h3 {
+    .preview-panel h3 {
       margin: 0 0 8px;
       font-size: 14px;
+      color: #374151;
     }
     #sheet-preview-wrapper {
       flex: 1;
@@ -214,33 +283,6 @@
       font-size: 12px;
       color: #6b7280;
     }
-    #coords-table-wrapper {
-      flex: 1;
-      overflow: auto;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    th, td {
-      padding: 4px 6px;
-      text-align: right;
-      border-bottom: 1px solid #e5e7eb;
-      white-space: nowrap;
-    }
-    th:first-child, td:first-child {
-      text-align: left;
-    }
-    thead {
-      background: #e5e7eb;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
     .empty-state {
       font-size: 13px;
       color: #6b7280;
@@ -260,7 +302,7 @@
       }
       .builder-body {
         grid-template-columns: 1fr;
-        grid-template-rows: 1fr 1fr;
+        grid-template-rows: auto 1fr;
       }
     }
   </style>
@@ -291,15 +333,36 @@
 
     <section class="builder">
       <div class="builder-header">
-        <h2 id="builder-title">No label selected</h2>
-        <small id="builder-subtitle">Choose a base label on the left, give it a name (e.g. "Peach"), then generate a 4×6 A4 sheet.</small>
+        <h2 id="builder-title">Label Sheet Builder</h2>
+        <small id="builder-subtitle">Upload an image to create your label, then generate an A4 sheet.</small>
       </div>
 
       <div class="builder-body">
-        <div class="card">
-          <h3>A4 sheet preview</h3>
+        <div class="tool-panel">
+          <h3>Label Design</h3>
+          
+          <div class="round-label-canvas" id="round-canvas">
+            <div class="placeholder">No image uploaded</div>
+          </div>
+          
+          <div class="upload-section">
+            <input type="file" id="image-upload" accept="image/*">
+            <button class="upload-btn" id="upload-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload Image
+            </button>
+            <span class="status-text" id="image-status"></span>
+          </div>
+        </div>
+
+        <div class="preview-panel">
+          <h3>A4 Sheet Preview</h3>
           <div id="sheet-preview-wrapper">
-            <div class="empty-state" id="preview-empty">No label selected yet.</div>
+            <div class="empty-state" id="preview-empty">Upload an image to generate your label sheet.</div>
             <div id="sheet-preview" style="display:none;"></div>
           </div>
           <div class="controls">
@@ -308,16 +371,8 @@
               <input id="design-name-input" type="text" placeholder="e.g. Peach" />
             </div>
             <button id="download-btn" disabled>Download A4 SVG</button>
-            <button id="save-drive-btn" class="secondary" disabled>Save base + sheet to Drive</button>
+            <button id="save-drive-btn" class="secondary" disabled>Save to Drive</button>
             <span class="status-text" id="save-status"></span>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Label coordinates on A4 (mm)</h3>
-          <div id="coords-table-wrapper">
-            <div class="empty-state" id="coords-empty">Coordinates will appear here once a sheet is generated.</div>
-            <div id="coords-table-container" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -333,15 +388,16 @@
     const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
     // === DOM references ===
-    const labelListEl = document.getElementById("label-list");
     const builderTitleEl = document.getElementById("builder-title");
     const builderSubtitleEl = document.getElementById("builder-subtitle");
 
     const sheetPreviewEl = document.getElementById("sheet-preview");
     const previewEmptyEl = document.getElementById("preview-empty");
 
-    const coordsEmptyEl = document.getElementById("coords-empty");
-    const coordsTableContainer = document.getElementById("coords-table-container");
+    const roundCanvas = document.getElementById("round-canvas");
+    const imageUpload = document.getElementById("image-upload");
+    const uploadBtn = document.getElementById("upload-btn");
+    const imageStatus = document.getElementById("image-status");
 
     const designNameInput = document.getElementById("design-name-input");
     const downloadBtn = document.getElementById("download-btn");
@@ -353,9 +409,9 @@
     const signOutBtn = document.getElementById("sign-out-btn");
 
     // === In-memory state ===
-    const labelSvgCache = new Map(); // fileId -> raw SVG text
     let currentSheet = null; // { svg, coords, name, labelName }
-    let currentBaseSvgText = null; // raw SVG of the selected base label
+    let uploadedImageDataUrl = null; // data URL of uploaded image
+    let uploadedImageFileName = null;
 
     let gapiInited = false;
 
@@ -426,125 +482,35 @@
       }
     });
 
-    // === Helpers for name + button state ===
+    // === Image Upload Handling ===
 
-    function hasValidDesignName() {
-      return designNameInput.value.trim().length > 0;
-    }
-
-    function updateSaveButtonEnabled() {
-      saveDriveBtn.disabled = !currentSheet || !hasValidDesignName();
-    }
-
-    designNameInput.addEventListener("input", () => {
-      saveStatusEl.textContent = "";
-      const baseName = designNameInput.value.trim();
-      if (currentSheet && baseName) {
-        currentSheet.name = `${baseName}x24.svg`;
-      }
-      updateSaveButtonEnabled();
+    uploadBtn.addEventListener("click", () => {
+      imageUpload.click();
     });
 
-    // === Drive listing for base label SVGs (read-only, via API key) ===
+    imageUpload.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    async function loadLabelFiles() {
-      try {
-        const url = `https://www.googleapis.com/drive/v3/files?q='${LABELS_FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Drive list failed: ${res.status}`);
-        }
-        const data = await res.json();
-        const svgFiles = (data.files || [])
-          .filter(f => f.mimeType === "image/svg+xml")
-          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        uploadedImageDataUrl = event.target.result;
+        uploadedImageFileName = file.name;
 
-        if (!svgFiles.length) {
-          labelListEl.innerHTML = '<div class="empty-state">No SVG labels found in this folder.</div>';
-          return;
-        }
+        // Display in round canvas
+        roundCanvas.innerHTML = `<img src="${uploadedImageDataUrl}" alt="Uploaded label">`;
 
-        svgFiles.forEach(file => addLabelListItem(file));
-      } catch (err) {
-        console.error(err);
-        labelListEl.innerHTML = '<div class="empty-state">Error loading labels from Google Drive.</div>';
-      }
-    }
+        imageStatus.textContent = `Loaded: ${file.name}`;
 
-    function addLabelListItem(file) {
-      const item = document.createElement("div");
-      item.className = "list-item";
-      item.dataset.id = file.id;
+        // Generate A4 sheet from the image
+        generateSheetFromImage(uploadedImageDataUrl, file.name);
+      };
+      reader.readAsDataURL(file);
+    });
 
-      const thumb = document.createElement("div");
-      thumb.className = "list-thumb";
-      item.appendChild(thumb);
+    // === A4 sheet generation from uploaded image ===
 
-      const title = document.createElement("div");
-      title.className = "list-title";
-      title.textContent = file.name;
-      item.appendChild(title);
-
-      item.addEventListener("click", () => onLabelSelected(file, item));
-      labelListEl.appendChild(item);
-
-      fetchLabelSvg(file.id)
-        .then(svgText => {
-          thumb.innerHTML = svgText;
-        })
-        .catch(() => {
-          thumb.innerHTML = "";
-        });
-    }
-
-    function clearSelectedListItems(container) {
-      container.querySelectorAll(".list-item.selected").forEach(el => {
-        el.classList.remove("selected");
-      });
-    }
-
-    async function onLabelSelected(file, itemEl) {
-      clearSelectedListItems(labelListEl);
-      itemEl.classList.add("selected");
-
-      builderTitleEl.textContent = file.name;
-      builderSubtitleEl.textContent = "Building 4×6 A4 sheet for this label. Enter a name before saving.";
-
-      saveStatusEl.textContent = "";
-
-      try {
-        const svgText = await fetchLabelSvg(file.id);
-        currentBaseSvgText = svgText;
-
-        const defaultName = file.name.replace(/\.svg$/i, "");
-        designNameInput.value = defaultName;
-
-        const sheet = buildA4SheetFromLabel(svgText, defaultName);
-        setCurrentSheet(sheet);
-        updateSaveButtonEnabled();
-      } catch (err) {
-        console.error(err);
-        showPreviewError("Could not load label SVG content.");
-      }
-    }
-
-    async function fetchLabelSvg(fileId) {
-      if (labelSvgCache.has(fileId)) {
-        return labelSvgCache.get(fileId);
-      }
-      const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`Drive fetch failed: ${res.status}`);
-      }
-      const text = await res.text();
-      labelSvgCache.set(fileId, text);
-      return text;
-    }
-
-    // === A4 sheet generation using your original 4×6 coords ===
-
-    function buildA4SheetFromLabel(labelSvgText, baseName) {
+    function generateSheetFromImage(imageDataUrl, fileName) {
       const pageWidthMm = 210;
       const pageHeightMm = 297;
 
@@ -576,19 +542,6 @@
       const cols = xPx.length;
       const rows = yPx.length;
 
-      const parser = new DOMParser();
-      const srcDoc = parser.parseFromString(labelSvgText, "image/svg+xml");
-      const srcSvg = srcDoc.documentElement;
-
-      let srcViewBox = srcSvg.getAttribute("viewBox");
-      if (!srcViewBox) {
-        const w = parseFloat(srcSvg.getAttribute("width") || "100") || 100;
-        const h = parseFloat(srcSvg.getAttribute("height") || "100") || 100;
-        srcViewBox = `0 0 ${w} ${h}`;
-      }
-
-      const innerSvgContent = srcSvg.innerHTML || "";
-
       const coords = [];
       let index = 1;
       for (let row = 0; row < rows; row++) {
@@ -614,28 +567,44 @@
         }
       }
 
+      // Generate SVG with the image as a clipPath circle
       let svg = "";
       svg += '<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">';
       svg += "<defs>";
-      svg += `<symbol id="label-source" viewBox="${srcViewBox}">`;
-      svg += innerSvgContent;
-      svg += "</symbol>";
+      svg += `<clipPath id="circle-clip">`;
+      svg += `<circle cx="85.285355" cy="85.150005" r="85.285355" />`;
+      svg += `</clipPath>`;
+      svg += `<pattern id="image-pattern" patternUnits="userSpaceOnUse" width="170.57071" height="170.30001">`;
+      svg += `<image href="${imageDataUrl}" x="0" y="0" width="170.57071" height="170.30001" preserveAspectRatio="xMidYMid slice" />`;
+      svg += `</pattern>`;
       svg += "</defs>";
 
       coords.forEach(c => {
-        svg += `<use href="#label-source" x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" />`;
+        // Create a group with white background and image clip
+        const cx = c.x + c.width / 2;
+        const cy = c.y + c.height / 2;
+        const r = Math.min(c.width, c.height) / 2;
+
+        svg += `<g transform="translate(${c.x}, ${c.y})">`;
+        svg += `<rect width="${c.width}" height="${c.height}" fill="white" />`;
+        svg += `<circle cx="${c.width / 2}" cy="${c.height / 2}" r="${r}" fill="url(#image-pattern)" />`;
+        svg += `</g>`;
       });
 
-      const name = `${baseName}x24.svg`;
-
+      const defaultName = fileName.replace(/\.[^/.]+$/, "");
       svg += "</svg>";
 
-      return {
+      const name = `${defaultName}x24.svg`;
+
+      currentSheet = {
         name,
-        labelName: baseName,
+        labelName: defaultName,
         svg,
         coords,
       };
+
+      setCurrentSheet(currentSheet);
+      updateSaveButtonEnabled();
     }
 
     function setCurrentSheet(sheet) {
@@ -644,8 +613,6 @@
       previewEmptyEl.style.display = "none";
       sheetPreviewEl.style.display = "block";
       sheetPreviewEl.innerHTML = sheet.svg;
-
-      renderCoordsTable(sheet.coords);
 
       downloadBtn.disabled = false;
       updateSaveButtonEnabled();
@@ -659,51 +626,24 @@
       saveDriveBtn.disabled = true;
     }
 
-    function renderCoordsTable(coords) {
-      if (!coords || !coords.length) {
-        coordsEmptyEl.style.display = "block";
-        coordsTableContainer.style.display = "none";
-        return;
-      }
+    // === Helpers for name + button state ===
 
-      coordsEmptyEl.style.display = "none";
-      coordsTableContainer.style.display = "block";
-
-      const rowsHtml = coords
-        .map(c => {
-          return `<tr>
-            <td>${c.index}</td>
-            <td>${c.row}</td>
-            <td>${c.col}</td>
-            <td>${c.x.toFixed(2)}</td>
-            <td>${c.y.toFixed(2)}</td>
-            <td>${c.width.toFixed(2)}</td>
-            <td>${c.height.toFixed(2)}</td>
-          </tr>`;
-        })
-        .join("");
-
-      const tableHtml = `
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Row</th>
-              <th>Col</th>
-              <th>X</th>
-              <th>Y</th>
-              <th>Width</th>
-              <th>Height</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-      `;
-
-      coordsTableContainer.innerHTML = tableHtml;
+    function hasValidDesignName() {
+      return designNameInput.value.trim().length > 0;
     }
+
+    function updateSaveButtonEnabled() {
+      saveDriveBtn.disabled = !currentSheet || !hasValidDesignName();
+    }
+
+    designNameInput.addEventListener("input", () => {
+      saveStatusEl.textContent = "";
+      const baseName = designNameInput.value.trim();
+      if (currentSheet && baseName) {
+        currentSheet.name = `${baseName}x24.svg`;
+      }
+      updateSaveButtonEnabled();
+    });
 
     // === Download current sheet as SVG (local) ===
 
@@ -766,21 +706,24 @@
     }
 
     saveDriveBtn.addEventListener("click", async () => {
-      if (!currentSheet || !currentBaseSvgText || !hasValidDesignName()) return;
+      if (!currentSheet || !uploadedImageDataUrl || !hasValidDesignName()) return;
 
       const baseName = designNameInput.value.trim();
       const baseFileName = `${baseName}.svg`;
       const sheetFileName = `${baseName}x24.svg`;
 
-      saveStatusEl.textContent = "Saving base + sheet to Drive...";
+      saveStatusEl.textContent = "Saving to Drive...";
 
       try {
         await ensureSignedIn();
 
-        // Upload/duplicate the base label SVG into the Base Labels folder under the chosen name
-        const baseResp = await uploadSvgToDrive(baseFileName, currentBaseSvgText, LABELS_FOLDER_ID);
+        // Generate a simple SVG for the base label
+        const baseSvg = generateBaseSvg(uploadedImageDataUrl);
 
-        // Upload the generated A4 sheet into the Sheets folder under the chosen name
+        // Upload the base label SVG into the Base Labels folder
+        const baseResp = await uploadSvgToDrive(baseFileName, baseSvg, LABELS_FOLDER_ID);
+
+        // Upload the generated A4 sheet into the Sheets folder
         const sheetResp = await uploadSvgToDrive(sheetFileName, currentSheet.svg, SHEETS_FOLDER_ID);
 
         const baseId = baseResp && baseResp.result && baseResp.result.id;
@@ -797,9 +740,23 @@
       }
     });
 
-    // === Init ===
+    function generateBaseSvg(imageDataUrl) {
+      // Generate a simple circular label SVG for the base
+      const size = 170;
+      const r = size / 2;
 
-    loadLabelFiles();
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <defs>
+          <pattern id="base-image" patternUnits="userSpaceOnUse" width="${size}" height="${size}">
+            <image href="${imageDataUrl}" x="0" y="0" width="${size}" height="${size}" preserveAspectRatio="xMidYMid slice" />
+          </pattern>
+        </defs>
+        <rect width="${size}" height="${size}" fill="white" />
+        <circle cx="${r}" cy="${r}" r="${r}" fill="url(#base-image)" />
+      </svg>`;
+    }
+
+    // === Init ===
   </script>
 </body>
 </html>

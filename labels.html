@@ -559,21 +559,31 @@
       svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidthMm}mm" height="${svgHeightMm}mm" viewBox="0 0 ${svgWidthMm} ${svgHeightMm}">`;
       svg += '<rect width="100%" height="100%" fill="white" />';
 
-      // Generate each label
+      // Generate all clipPaths in a single defs block first
+      svg += '<defs>';
       let index = 1;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const x = xMm[col];
           const y = yMm[row];
-
-          // Create clipPath for this label
           const clipId = `clip-${index}`;
           
-          svg += `<defs>`;
           svg += `<clipPath id="${clipId}">`;
           svg += `<rect x="${x}" y="${y}" width="${labelWidthMm}" height="${labelHeightMm}" />`;
           svg += `</clipPath>`;
-          svg += `</defs>`;
+
+          index++;
+        }
+      }
+      svg += '</defs>';
+
+      // Generate all labels (circles and images)
+      index = 1;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = xMm[col];
+          const y = yMm[row];
+          const clipId = `clip-${index}`;
 
           // White background circle
           const cx = x + labelWidthMm / 2;

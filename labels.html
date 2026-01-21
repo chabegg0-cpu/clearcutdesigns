@@ -216,8 +216,8 @@
       width: 707px;
       height: 1000px;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      align-items: flex-start;
+      justify-content: flex-start;
       overflow: auto;
       background: #f9fafb;
       border-radius: 8px;
@@ -230,6 +230,8 @@
       background: white;
       border-radius: 4px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      /* Ensure SVG renders at natural size within the scrollable container */
+      flex-shrink: 0;
     }
     .controls {
       display: flex;
@@ -532,44 +534,33 @@
       const labelWidthPx = 170.57071;
       const labelHeightPx = 170.30001;
 
-      // A4 dimensions in mm
+      // SVG canvas dimensions (pixel units for correct display)
+      const svgWidth = 796;
+      const svgHeight = 1124;
+
+      // A4 physical dimensions in mm for proper printing
       const svgWidthMm = 210;
       const svgHeightMm = 297;
 
-      // Original pixel canvas dimensions
-      const originalWidthPx = 796;
-      const originalHeightPx = 1124;
+      const cols = xPx.length;
+      const rows = yPx.length;
 
-      // Calculate conversion ratios
-      const ratioX = svgWidthMm / originalWidthPx;
-      const ratioY = svgHeightMm / originalHeightPx;
-      const ratioAvg = (ratioX + ratioY) / 2;
-
-      // Convert pixel coordinates to mm
-      const xMm = xPx.map(v => Number((v * ratioX).toFixed(2)));
-      const yMm = yPx.map(v => Number((v * ratioY).toFixed(2)));
-      const labelWidthMm = Number((labelWidthPx * ratioAvg).toFixed(2));
-      const labelHeightMm = Number((labelHeightPx * ratioAvg).toFixed(2));
-
-      const cols = xMm.length;
-      const rows = yMm.length;
-
-      // Generate SVG at A4 size with mm dimensions
+      // Generate SVG with pixel-based viewBox and mm physical dimensions
       let svg = '';
-      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidthMm}mm" height="${svgHeightMm}mm" viewBox="0 0 ${svgWidthMm} ${svgHeightMm}">`;
+      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidthMm}mm" height="${svgHeightMm}mm" viewBox="0 0 ${svgWidth} ${svgHeight}">`;
       svg += '<rect width="100%" height="100%" fill="white" />';
 
-      // Generate all clipPaths in a single defs block first
+      // Generate all clipPaths in a single defs block
       svg += '<defs>';
       let index = 1;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          const x = xMm[col];
-          const y = yMm[row];
+          const x = xPx[col];
+          const y = yPx[row];
           const clipId = `clip-${index}`;
           
           svg += `<clipPath id="${clipId}">`;
-          svg += `<rect x="${x}" y="${y}" width="${labelWidthMm}" height="${labelHeightMm}" />`;
+          svg += `<rect x="${x}" y="${y}" width="${labelWidthPx}" height="${labelHeightPx}" />`;
           svg += `</clipPath>`;
 
           index++;
@@ -581,22 +572,22 @@
       index = 1;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
-          const x = xMm[col];
-          const y = yMm[row];
+          const x = xPx[col];
+          const y = yPx[row];
           const clipId = `clip-${index}`;
 
           // White background circle
-          const cx = x + labelWidthMm / 2;
-          const cy = y + labelHeightMm / 2;
-          const r = labelWidthMm / 2;
+          const cx = x + labelWidthPx / 2;
+          const cy = y + labelHeightPx / 2;
+          const r = labelWidthPx / 2;
           svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" />`;
 
-          // Image using transform matrix
+          // Image using transform matrix (same as reference file)
           svg += `<image `;
           svg += `href="${imageDataUrl}" `;
           svg += `width="1" height="1" `;
           svg += `preserveAspectRatio="none" `;
-          svg += `transform="matrix(${labelWidthMm},0,0,${labelHeightMm},${x},${y})" `;
+          svg += `transform="matrix(${labelWidthPx},0,0,${labelHeightPx},${x},${y})" `;
           svg += `clip-path="url(#${clipId})" `;
           svg += `/>`;
 
